@@ -11,6 +11,8 @@ struct ContentView: View {
     @State private var moves: [Move?] = Array(repeating: nil, count: 9)
     @State private var isGameboardDisabled = false
     @State private var alertItem: AlertItem?
+    @Binding var whoStart : Bool
+    @State private var count = 0
     
     var body: some View {
         NavigationView{
@@ -28,29 +30,79 @@ struct ContentView: View {
                             .foregroundColor(.white)
                             .opacity(moves[i] == nil ? 0 : 1)
                     }
+                    .onAppear(){
+                        if (whoStart == false) && (count == 0) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                let computerPosition = determinComputerMove(in: moves)
+                                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                                isGameboardDisabled.toggle()
+                                
+                                if checkWinCondition(for: .computer, in: moves){
+                                    alertItem = AlertContext.computerWin
+                                }
+                                if checkForDraw(in: moves){
+                                    alertItem = AlertContext.draw
+                                    return
+                                }
+                            }
+                            isGameboardDisabled.toggle()
+                            count+=1
+                        }
+                    }
                     .onTapGesture {
-                        if isSquareOccupied(in: moves, forIndex: i) { return }
-                        moves[i] = Move(player: .human , boardIndex: i)
-                        
-                        if checkWinCondition(for: .human, in: moves){
-                            alertItem = AlertContext.humanWin
-                            return
-                        }
-                        if checkForDraw(in: moves){
-                            alertItem = AlertContext.draw
-                            return
-                        }
-                        
-                        isGameboardDisabled.toggle()
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            let computerPosition = determinComputerMove(in: moves)
-                            moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                        if whoStart == true {
+                            if isSquareOccupied(in: moves, forIndex: i) { return }
+                            moves[i] = Move(player: .human , boardIndex: i)
+                            
+                            if checkWinCondition(for: .human, in: moves){
+                                alertItem = AlertContext.humanWin
+                                return
+                            }
+                            if checkForDraw(in: moves){
+                                alertItem = AlertContext.draw
+                                return
+                            }
+                            
                             isGameboardDisabled.toggle()
                             
-                            if checkWinCondition(for: .computer, in: moves){
-                                alertItem = AlertContext.computerWin
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                let computerPosition = determinComputerMove(in: moves)
+                                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                                isGameboardDisabled.toggle()
+                                
+                                if checkWinCondition(for: .computer, in: moves){
+                                    alertItem = AlertContext.computerWin
+                                }
                             }
+                        }else{
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                let computerPosition = determinComputerMove(in: moves)
+                                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                                isGameboardDisabled.toggle()
+                                
+                                if checkWinCondition(for: .computer, in: moves){
+                                    alertItem = AlertContext.computerWin
+                                }
+                                if checkForDraw(in: moves){
+                                    alertItem = AlertContext.draw
+                                    return
+                                }
+                            }
+                            if isSquareOccupied(in: moves, forIndex: i) { return }
+                            moves[i] = Move(player: .human , boardIndex: i)
+                            
+                            if checkWinCondition(for: .human, in: moves){
+                                alertItem = AlertContext.humanWin
+                                return
+                            }
+                            if checkForDraw(in: moves){
+                                alertItem = AlertContext.draw
+                                return
+                            }
+                            
+                            isGameboardDisabled.toggle()
+                            
+                            
                         }
                     }
                 }
@@ -67,6 +119,18 @@ struct ContentView: View {
     }
     func resetGame(){
         moves = Array(repeating: nil, count: 9)
+        whoStart.toggle()
+        if(whoStart == false){
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                let computerPosition = determinComputerMove(in: moves)
+                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                //isGameboardDisabled.toggle()
+                
+                if checkWinCondition(for: .computer, in: moves){
+                    alertItem = AlertContext.computerWin
+                }
+            }
+        }
     }
     
     func checkWinCondition(for player: Player, in moves: [Move?]) -> Bool{
@@ -164,10 +228,13 @@ struct AlertContext {
     static let humanWin = AlertItem(title: "You Win !", message: "You are so smart damnnn", buttonTitle: "Hell Yeah")
     static let draw = AlertItem(title: "Draw", message: "What a battle", buttonTitle: "Try Again")
     static let computerWin = AlertItem(title: "You Lost !", message: "Are you stupid ?", buttonTitle: "LMAO no")
+    static let humanFirst = AlertItem(title: "You start first !", message: "You First",buttonTitle: "Okay")
+    static let comFirst = AlertItem(title: "Computer start first !", message: "Me First", buttonTitle: "Go Ahead")
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        ContentView(whoStart: Binding.constant(false))
+        
     }
 }
